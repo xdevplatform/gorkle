@@ -116,10 +116,11 @@ class GameEngine:
         intro = ""
         if game is None:
             game = self.store.start_game(user_id, today)
-            intro = copy.welcome() + "\n\n"
-            self.store.record_turn(user_id, today, "assistant", copy.welcome())
-            if lowered in META or lowered in {"hi", "hello", "hey", "start", "play"}:
+            if lowered in META or is_smalltalk(stripped):
+                self.store.record_turn(user_id, today, "assistant", copy.welcome())
                 return copy.welcome()
+            intro = copy.welcome(ask=False) + "\n\n"
+            self.store.record_turn(user_id, today, "assistant", copy.welcome(ask=False))
 
         if lowered in META or lowered == "score":
             return f"{copy.HELP}\n\n{copy.remaining_line(game)}"

@@ -575,7 +575,7 @@ class Bot:
             with self._crypto:
                 body = self.core.encrypt_message(
                     conv,
-                    copy.share_caption(),
+                    copy.share_caption(game),
                     conversation_key=raw_key,
                     conversation_key_version=version,
                     attachments=attachments,

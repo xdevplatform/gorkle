@@ -5,6 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
 
+from groks_secret import copy
 from groks_secret.game import GameEngine, is_question, is_smalltalk
 from groks_secret.store import MAX_QUESTIONS, Store
 
@@ -106,6 +107,12 @@ class GameTests(unittest.TestCase):
         game = self.store.get_game("8")
         assert game is not None
         self.assertEqual(game.questions_used, 1)
+
+    def test_opening_smalltalk_is_welcome_only(self) -> None:
+        reply = self.engine.handle("11", "yo")
+        self.assertEqual(reply, copy.welcome())
+        self.assertNotIn("Ask it as a question", reply)
+        self.assertEqual(reply.lower().count("left"), 1)
 
     def test_smalltalk_skips_grok(self) -> None:
         self.engine.handle("10", "help")

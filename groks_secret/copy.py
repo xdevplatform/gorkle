@@ -22,12 +22,14 @@ def day_label(day: str) -> str:
 _label = day_label
 
 
-def welcome(questions_left: int = MAX_QUESTIONS) -> str:
-    return (
+def welcome(questions_left: int = MAX_QUESTIONS, *, ask: bool = True) -> str:
+    text = (
         f"PlayGrokkle · {day_label(datetime.now(ET).date().isoformat())}\n\n"
-        f"{HELP}\n\n"
-        f"{questions_left} left. Ask."
+        f"{HELP}"
     )
+    if ask:
+        text += f"\n\n{questions_left} left. Ask."
+    return text
 
 
 def already_played(game: Game, topic: str) -> str:
@@ -46,8 +48,10 @@ def share_score_line(game: Game) -> str:
     return f"{game.questions_used}/{MAX_QUESTIONS}"
 
 
-def share_caption() -> str:
-    return "A souvenir. The answer isn't on it."
+def share_caption(game: Game) -> str:
+    if game.status == "won":
+        return "You did it! Share how you did, and come back tomorrow for your next shot..."
+    return "Share how you did, and come back tomorrow for your next shot..."
 
 
 def share_card(game: Game) -> str:
