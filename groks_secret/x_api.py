@@ -156,6 +156,9 @@ class XChatClient:
             detail = err.read().decode("utf-8", errors="replace")
             if err.code == 429:
                 raise RateLimited(retry_after_seconds(err), f"{method} {path}") from err
+            if err.code == 400 and "DuplicateSubscription" in detail:
+                logger.info("activity_already_subscribed %s", path)
+                return {"duplicate": True}
             logger.error("http_%s %s %s %s", err.code, method, path, detail[:500])
             raise
 

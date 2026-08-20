@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import queue
 import threading
@@ -20,6 +21,12 @@ logger = logging.getLogger("groks_secret.bot")
 RECENT_HOURS = 48
 SWEEP_WITH_STREAM = 60.0
 SWEEP_WITHOUT_STREAM = 8.0
+STREAM_SWEEP_GRACE = 90.0
+
+
+def ciphertext_id(encoded: str) -> str:
+    digest = hashlib.sha256(encoded.encode("utf-8", errors="replace")).hexdigest()[:32]
+    return f"enc:{digest}"
 
 
 def _created_at_key(item: dict[str, Any]) -> str:
@@ -115,6 +122,7 @@ class Bot:
         self._until: dict[str, float] = {}
         self._next_sweep = 0.0
         self._need_poll: set[str] = set()
+        self._stream_touch: dict[str, float] = {}
         for cid in store.watched_ids():
             self._watch.add(cid)
 
@@ -229,7 +237,12 @@ class Bot:
                 continue
             api_id = str(dumped.get("id") or "")
             event_conv = str(dumped.get("conversation_id") or conversation_id).replace(":", "-")
+            encoded = str(dumped.get("encoded_event") or "")
             if api_id and self.store.seen(event_conv, api_id):
+                continue
+            if encoded and self.store.seen(event_conv, ciphertext_id(encoded)):
+                if api_id:
+                    self.store.mark_seen(event_conv, api_id)
                 continue
             raw.append(dumped)
         raw.sort(key=_created_at_key)
@@ -297,6 +310,7 @@ class Bot:
                 event,
                 reply=should_reply,
                 api_id=api_id,
+                encoded=str(event_b64 or ""),
             )
 
     def pending(self) -> bool:
@@ -336,6 +350,13 @@ class Bot:
 
     def poll_conversation(self, conversation_id: str) -> None:
         cid = conversation_id.replace(":", "-")
+        touched = self._stream_touch.get(cid, 0.0)
+        if (
+            self.store.cursor(cid)["bootstrapped"]
+            and touched
+            and time.monotonic() - touched < STREAM_SWEEP_GRACE
+        ):
+            return
         if self._cooling("global") or self._cooling(cid):
             self._need_poll.add(cid)
             return
@@ -354,6 +375,33 @@ class Bot:
             self._watch_conversation(event_conv, peer)
         self._ingest_page(cid, page, reply=True)
 
+    def _claim_inbound(
+        self,
+        conv: str,
+        api_id: str,
+        encoded: str,
+        event: dict[str, Any],
+    ) -> bool:
+        keys: list[str] = []
+        if encoded:
+            keys.append(ciphertext_id(encoded))
+        if api_id:
+            keys.append(api_id)
+        mid = str(event.get("message_id") or "")
+        if mid and mid not in keys:
+            keys.append(f"mid:{mid}")
+        if not keys:
+            return False
+        if any(self.store.seen(conv, key) for key in keys):
+            for key in keys:
+                self.store.mark_seen(conv, key)
+            return False
+        if not self.store.try_claim(conv, keys[0]):
+            return False
+        for key in keys[1:]:
+            self.store.mark_seen(conv, key)
+        return True
+
     def _maybe_reply(
         self,
         conversation_id: str,
@@ -361,26 +409,33 @@ class Bot:
         *,
         reply: bool,
         api_id: str = "",
+        encoded: str = "",
     ) -> None:
         event_id = api_id or str(event.get("id") or event.get("message_id") or "")
         sender_id = str(event.get("sender_id") or "")
         conv = str(event.get("conversation_id") or conversation_id).replace(":", "-")
-        if not event_id:
+        if not event_id and not encoded:
             return
         if sender_id and sender_id != self.bot_user_id:
             self._watch_conversation(conv, sender_id)
         if not reply or sender_id == self.bot_user_id:
-            self.store.mark_seen(conv, event_id)
+            if event_id:
+                self.store.mark_seen(conv, event_id)
+            if encoded:
+                self.store.mark_seen(conv, ciphertext_id(encoded))
             return
         text = message_text(event)
         if not text:
-            self.store.mark_seen(conv, event_id)
+            if event_id:
+                self.store.mark_seen(conv, event_id)
+            if encoded:
+                self.store.mark_seen(conv, ciphertext_id(encoded))
+            return
+        if not self._claim_inbound(conv, event_id, encoded, event):
             return
         self._pool.submit(self._reply_job, conv, sender_id, event_id, text)
 
     def _reply_job(self, conv: str, sender_id: str, event_id: str, text: str) -> None:
-        if not self.store.try_claim(conv, event_id):
-            return
         with self._user_lock(sender_id):
             prior = self.store.get_game(sender_id)
             just_finished = not prior or prior.status == "in_progress"
@@ -596,6 +651,7 @@ class Bot:
         if bootstrapped and page:
             if event_uuid:
                 self.store.mark_seen(conv, f"uuid:{event_uuid}")
+            self._stream_touch[conv] = time.monotonic()
             self._ingest_page(conv, page, reply=True)
             return
         self.poll_conversation(conv)

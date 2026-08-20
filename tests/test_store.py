@@ -23,5 +23,14 @@ class StoreClaimTests(unittest.TestCase):
         self.assertTrue(self.store.try_claim("c1", "e2"))
 
 
+class CiphertextIdTests(unittest.TestCase):
+    def test_stable_and_distinct(self) -> None:
+        from groks_secret.bot import ciphertext_id
+
+        self.assertEqual(ciphertext_id("abc"), ciphertext_id("abc"))
+        self.assertTrue(ciphertext_id("abc").startswith("enc:"))
+        self.assertNotEqual(ciphertext_id("abc"), ciphertext_id("abd"))
+
+
 if __name__ == "__main__":
     unittest.main()
