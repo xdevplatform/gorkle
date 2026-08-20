@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import threading
 import time
 from typing import Any
 from urllib.error import HTTPError
@@ -129,6 +130,8 @@ class XChatClient:
         self.client = Client(access_token=access_token)
         self._token = access_token
         self._app = Client(bearer_token=bearer_token) if bearer_token else None
+        self._pubkey_lock = threading.Lock()
+        self._pubkeys: dict[str, list[dict[str, Any]]] = {}
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -166,6 +169,10 @@ class XChatClient:
         return str(self.client.users.get_me().data.id)
 
     def get_public_keys(self, user_id: str) -> list[dict[str, Any]]:
+        with self._pubkey_lock:
+            cached = self._pubkeys.get(user_id)
+        if cached is not None:
+            return cached
         resp = self.client.users.get_public_key(
             user_id,
             public_key_fields=[
@@ -178,7 +185,10 @@ class XChatClient:
         )
         data = resp.data or []
         items = data if isinstance(data, list) else [data]
-        return [_dump(d) if not isinstance(d, dict) else d for d in items]
+        rows = [_dump(d) if not isinstance(d, dict) else d for d in items]
+        with self._pubkey_lock:
+            self._pubkeys[user_id] = rows
+        return rows
 
     def get_juicebox_config(self, user_id: str) -> tuple[str, str, str]:
         items = self.get_public_keys(user_id)

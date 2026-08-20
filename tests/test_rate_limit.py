@@ -19,6 +19,19 @@ def _http_429(retry_after: str = "30") -> HTTPError:
     return err
 
 
+class PublicKeyCacheTests(unittest.TestCase):
+    def test_second_lookup_does_not_hit_api(self) -> None:
+        api = XChatClient("token")
+        api.client = MagicMock()
+        api.client.users.get_public_key.return_value = MagicMock(
+            data=[{"public_key": "pk", "public_key_version": "1"}]
+        )
+        first = api.get_public_keys("99")
+        second = api.get_public_keys("99")
+        self.assertEqual(first, second)
+        self.assertEqual(api.client.users.get_public_key.call_count, 1)
+
+
 class RateLimitHelpersTests(unittest.TestCase):
     def test_status_and_retry_after(self) -> None:
         err = _http_429("45")

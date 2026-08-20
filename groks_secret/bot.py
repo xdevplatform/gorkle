@@ -343,7 +343,7 @@ class Bot:
         cur = self.store.cursor(conversation_id)
         if cur["bootstrapped"]:
             return
-        first = self.api.get_events(conversation_id, max_results=100, all_pages=True)
+        first = self.api.get_events(conversation_id, max_results=50, all_pages=False)
         inbound = [
             item
             for item in (first.get("data") or [])
@@ -493,18 +493,23 @@ class Bot:
         text: str,
         attachments: list[dict[str, Any]] | None = None,
     ) -> dict[str, str] | None:
+        key = self._latest_key(conv)
+        if key is None:
+            logger.info("establishing_conversation_key conv=%s", conv)
+            self._ensure_keys(conv, sender_id)
+            key = self._latest_key(conv)
         try:
             with self._crypto:
+                if key is not None:
+                    version, raw = key
+                    return self.core.encrypt_message(
+                        conv,
+                        text,
+                        conversation_key=raw,
+                        conversation_key_version=version,
+                        attachments=attachments,
+                    )
                 return self.core.encrypt_message(conv, text, attachments=attachments)
-        except ValueError:
-            logger.warning("no_conversation_key conv=%s — establishing", conv)
-            self._ensure_keys(conv, sender_id)
-            try:
-                with self._crypto:
-                    return self.core.encrypt_message(conv, text, attachments=attachments)
-            except Exception:
-                logger.exception("encrypt_failed conv=%s", conv)
-                return None
         except Exception:
             logger.exception("encrypt_failed conv=%s", conv)
             return None
@@ -644,31 +649,33 @@ class Bot:
         event_uuid = str(item.get("event_uuid") or "")
         if conv:
             self._watch_conversation(conv, sender if isinstance(sender, str) else None)
-        if sender and not self._already_watching_peer(str(sender)):
+        elif sender:
             if self._cooling("global"):
-                self._need_poll.add(conv or str(sender))
-            else:
-                try:
-                    canonical = self.api.canonical_conversation_id(str(sender))
-                    if canonical:
-                        self._watch_conversation(canonical, str(sender))
-                        conv = conv or canonical
-                except RateLimited as err:
-                    self._on_rate_limited(err, conv or str(sender))
-                    return
-                except Exception:
-                    logger.warning("discovered_peer_lookup_failed peer=%s", sender, exc_info=True)
+                self._need_poll.add(str(sender))
+                return
+            try:
+                canonical = self.api.canonical_conversation_id(str(sender))
+                if canonical:
+                    self._watch_conversation(canonical, str(sender))
+                    conv = canonical
+            except RateLimited as err:
+                self._on_rate_limited(err, str(sender))
+                return
+            except Exception:
+                logger.warning("discovered_peer_lookup_failed peer=%s", sender, exc_info=True)
         if not conv:
             return
         if event_uuid and self.store.seen(conv, f"uuid:{event_uuid}"):
             return
-        bootstrapped = bool(self.store.cursor(conv)["bootstrapped"])
         page = activity_to_page(payload)
-        if bootstrapped and page:
+        if page:
             if event_uuid:
                 self.store.mark_seen(conv, f"uuid:{event_uuid}")
             self._stream_touch[conv] = time.monotonic()
             self._ingest_page(conv, page, reply=True)
+            if not self.store.cursor(conv)["bootstrapped"]:
+                self.store.set_cursor(conv, None, True)
+                logger.info("bootstrapped conv=%s via=stream", conv)
             return
         self.poll_conversation(conv)
 

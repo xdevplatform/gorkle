@@ -71,6 +71,10 @@ def main() -> None:
 
     settings = Settings.from_env()
     bot = build(settings)
+    try:
+        bot.api.get_public_keys(bot.bot_user_id)
+    except Exception:
+        logger.warning("bot_public_keys_prefetch_failed", exc_info=True)
     backend = "postgres" if settings.database_url else "sqlite"
     logger.info(
         "playgrokkle_running bot=%s poll=%.1fs workers=%d store=%s pick=%s answer=%s",
