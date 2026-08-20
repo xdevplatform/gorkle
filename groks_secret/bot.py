@@ -22,6 +22,7 @@ RECENT_HOURS = 48
 SWEEP_WITH_STREAM = 60.0
 SWEEP_WITHOUT_STREAM = 8.0
 STREAM_SWEEP_GRACE = 90.0
+PLAYED_NOTICE_COOLDOWN = 180.0
 
 
 def ciphertext_id(encoded: str) -> str:
@@ -118,6 +119,7 @@ class Bot:
         self._decrypt_skip_logged = False
         self._requests_logged = False
         self._share_sent: set[str] = set()
+        self._played_notice: dict[str, float] = {}
         self.stream_enabled = False
         self._until: dict[str, float] = {}
         self._next_sweep = 0.0
@@ -302,6 +304,12 @@ class Bot:
                 if api_id:
                     self.store.mark_seen(event_conv, api_id)
                 continue
+            mid = str(event.get("message_id") or "")
+            if mid and self.store.seen(event_conv, f"mid:{mid}"):
+                if api_id:
+                    self.store.mark_seen(event_conv, api_id)
+                self.store.mark_seen(event_conv, ciphertext_id(str(event_b64)))
+                continue
             should_reply = reply and (not only_recent or _is_recent(item))
             if reply_last_inbound:
                 should_reply = should_reply and api_id == last_inbound_id
@@ -350,30 +358,31 @@ class Bot:
 
     def poll_conversation(self, conversation_id: str) -> None:
         cid = conversation_id.replace(":", "-")
-        touched = self._stream_touch.get(cid, 0.0)
-        if (
-            self.store.cursor(cid)["bootstrapped"]
-            and touched
-            and time.monotonic() - touched < STREAM_SWEEP_GRACE
-        ):
-            return
         if self._cooling("global") or self._cooling(cid):
             self._need_poll.add(cid)
             return
         try:
             self.bootstrap(cid)
-            page = self.api.get_events(cid, max_results=50)
         except RateLimited as err:
             self._on_rate_limited(err, cid)
             return
         self._need_poll.discard(cid)
+        # The activity stream is the live path. Re-GET /events on known threads
+        # replays history under new ids and sends a pile of unprompted replies.
+        if self.stream_enabled:
+            return
+        try:
+            page = self.api.get_events(cid, max_results=50)
+        except RateLimited as err:
+            self._on_rate_limited(err, cid)
+            return
         for item in page.get("data") or []:
             dumped = item if isinstance(item, dict) else _dump(item)
             event_conv = str((dumped or {}).get("conversation_id") or cid).replace(":", "-")
             sender = str((dumped or {}).get("sender_id") or "")
             peer = sender if sender and sender != self.bot_user_id else None
             self._watch_conversation(event_conv, peer)
-        self._ingest_page(cid, page, reply=True)
+        self._ingest_page(cid, page, reply=True, only_recent=True)
 
     def _claim_inbound(
         self,
@@ -438,6 +447,11 @@ class Bot:
     def _reply_job(self, conv: str, sender_id: str, event_id: str, text: str) -> None:
         with self._user_lock(sender_id):
             prior = self.store.get_game(sender_id)
+            if prior and prior.status in {"won", "lost"}:
+                notice = f"{prior.date}:{sender_id}"
+                last = self._played_notice.get(notice, 0.0)
+                if time.monotonic() - last < PLAYED_NOTICE_COOLDOWN:
+                    return
             just_finished = not prior or prior.status == "in_progress"
             try:
                 answer = self.engine.handle(sender_id, text)
@@ -447,6 +461,8 @@ class Bot:
             if not self._send_text(conv, sender_id, answer):
                 logger.error("reply_unsent user=%s event=%s", sender_id, event_id)
                 return
+            if prior and prior.status in {"won", "lost"}:
+                self._played_notice[f"{prior.date}:{sender_id}"] = time.monotonic()
             game = self.store.get_game(sender_id)
             if game and game.status in {"won", "lost"}:
                 token = f"{game.date}:{game.user_id}"
