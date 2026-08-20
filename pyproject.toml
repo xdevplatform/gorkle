@@ -1,7 +1,7 @@
 [project]
 name = "groks-secret"
 version = "0.1.0"
-description = "PlayGrokkle: daily yes/no guessing game over X Chat as @groksecret"
+description = "PlayGrokkle: daily yes/no guessing game over X Chat as @PlayGrokkle"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

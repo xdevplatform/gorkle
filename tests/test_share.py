@@ -31,6 +31,8 @@ class ShareCardTests(unittest.TestCase):
         self.assertIn("mask slips", text)
         self.assertNotIn("Shareable", text)
         self.assertIn("PlayGrokkle", copy.welcome())
+        self.assertIn("@PlayGrokkle", copy.share_card(_game("won", 4)))
+        self.assertNotIn("@groksecret", copy.share_card(_game("won", 4)))
         self.assertIn("You did it!", copy.share_caption(_game("won", 4)))
         self.assertNotIn("You did it!", copy.share_caption(_game("lost", 20)))
         self.assertNotIn("souvenir", copy.share_caption(_game("won", 4)).lower())

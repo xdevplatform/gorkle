@@ -1,8 +1,8 @@
 # PlayGrokkle
 
-Daily **PlayGrokkle** over [X Chat](https://docs.x.com/xchat/introduction.md) as [@groksecret](https://x.com/groksecret).
+Daily **PlayGrokkle** over [X Chat](https://docs.x.com/xchat/introduction.md) as [@PlayGrokkle](https://x.com/PlayGrokkle).
 
-At midnight Eastern the bot pulls live X trends (app-bearer WOEID + X News), Grok picks one niche secret, and anyone who DMs `@groksecret` can ask yes/no questions (20 max, one game per person per day). After they finish, they get a spoiler-free PlayGrokkle share image with their score.
+At midnight Eastern the bot pulls live X trends (app-bearer WOEID + X News), Grok picks one niche secret, and anyone who DMs `@PlayGrokkle` can ask yes/no questions (20 max, one game per person per day). After they finish, they get a spoiler-free PlayGrokkle share image with their score.
 
 ## Setup
 
@@ -20,7 +20,7 @@ Fill in `.env`:
 
 | Variable | What |
 | --- | --- |
-| `X_ACCESS_TOKEN` | OAuth 2.0 **user** token for `@groksecret` with `dm.read dm.write tweet.read users.read media.write` |
+| `X_ACCESS_TOKEN` | OAuth 2.0 **user** token for `@PlayGrokkle` with `dm.read dm.write tweet.read users.read media.write` |
 | `X_BEARER_TOKEN` | App-only Bearer (needed for inbox discovery **and** `GET /2/trends/by/woeid`) |
 | `CHAT_BOT_USER_ID` | `2089844175688597504` |
 | `CHAT_PIN` | Juicebox PIN for the Chat identity |
@@ -52,11 +52,11 @@ The process binds `0.0.0.0:$PORT` so Replit health checks pass (`/` and `/health
 
 Locally, if `DATABASE_URL` is unset, it still uses SQLite at `data/groks_secret.sqlite`.
 
-`GET /2/chat/conversations` only returns the **primary inbox**. DMs from people who don't follow `@groksecret` sit in Message requests (`meta.has_message_requests: true`) and are omitted from that list. "Allow messages from anyone" does not move those threads into the inbox.
+`GET /2/chat/conversations` only returns the **primary inbox**. DMs from people who don't follow `@PlayGrokkle` sit in Message requests (`meta.has_message_requests: true`) and are omitted from that list. "Allow messages from anyone" does not move those threads into the inbox.
 
 To auto-discover those senders, set `X_BEARER_TOKEN` to the **app-only** Bearer token from the same X developer app (not the `xcbot_` user token). The bot already subscribes to `chat.received`; the stream is what delivers sender/conversation ids, and then `GET /2/chat/conversations/{id}` works even for request threads.
 
-Until that token is set, either put handles in `CHAT_PEER_USER_IDS` or ask players to follow `@groksecret` first.
+Until that token is set, either put handles in `CHAT_PEER_USER_IDS` or ask players to follow `@PlayGrokkle` first.
 
 ```bash
 python -m unittest discover -s tests

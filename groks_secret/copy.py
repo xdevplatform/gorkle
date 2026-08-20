@@ -7,6 +7,8 @@ from groks_secret.store import MAX_QUESTIONS, Game
 
 ET = ZoneInfo("America/New_York")
 
+HANDLE = "@PlayGrokkle"
+
 HELP = (
     "This is PlayGrokkle. One secret, pulled from what's trending on X. "
     "Yes-or-no only — you get 20. A guess counts if you ask it as a question.\n\n"
@@ -62,7 +64,7 @@ def share_card(game: Game) -> str:
         body = f"Didn't crack it in {MAX_QUESTIONS}."
     else:
         body = "Still playing."
-    return f"PlayGrokkle · {label}\n{body}\nPlay at @groksecret"
+    return f"PlayGrokkle · {label}\n{body}\nPlay at {HANDLE}"
 
 
 def remaining_line(game: Game) -> str:

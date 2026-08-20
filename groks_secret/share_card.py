@@ -134,7 +134,7 @@ def compose_share_card(game: Game, background: bytes | None = None) -> bytes:
     _draw_tracked(draw, "PLAYGROKKLE", (SIZE / 2, 724), wordmark_font, WHITE, 6)
     draw.text((SIZE / 2, 842), score, font=score_font, fill=GREEN, anchor="mm")
     draw.text((SIZE / 2, 930), meta, font=meta_font, fill=MUTED, anchor="mm")
-    draw.text((SIZE / 2, 976), "@groksecret", font=handle_font, fill=WHITE, anchor="mm")
+    draw.text((SIZE / 2, 976), copy.HANDLE, font=handle_font, fill=WHITE, anchor="mm")
 
     out = BytesIO()
     img.convert("RGB").save(out, format="JPEG", quality=93, optimize=True)
