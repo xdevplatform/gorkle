@@ -1,0 +1,4 @@
+chatxdk
+pillow
+psycopg[binary,pool]
+xdk

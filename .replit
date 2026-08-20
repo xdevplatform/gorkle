@@ -1,0 +1,14 @@
+run = "pip install -r requirements.txt -q && python -m groks_secret.main"
+entrypoint = "groks_secret/main.py"
+modules = ["python-3.11"]
+
+[deployment]
+build = ["pip", "install", "-r", "requirements.txt"]
+run = ["python", "-m", "groks_secret.main"]
+deploymentTarget = "gce"
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+PYTHONUNBUFFERED = "1"

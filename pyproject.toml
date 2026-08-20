@@ -1,0 +1,25 @@
+[project]
+name = "groks-secret"
+version = "0.1.0"
+description = "PlayGrokkle: daily yes/no guessing game over X Chat as @groksecret"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "chatxdk",
+  "pillow",
+  "psycopg[binary,pool]",
+  "xdk",
+]
+
+[project.scripts]
+groks-secret = "groks_secret.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["groks_secret*"]
+
+[tool.setuptools.package-data]
+groks_secret = ["assets/*"]
