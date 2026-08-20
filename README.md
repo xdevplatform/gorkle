@@ -27,6 +27,8 @@ Fill in `.env`:
 | `CHAT_SIGNING_KEY_VERSION` | Registered `public_key_version` |
 | `CHAT_FINGERPRINT` | Optional `public_key_fingerprint` check |
 | `XAI_API_KEY` | xAI key for Grok |
+| `XAI_MODEL` | Daily topic pick (default `grok-4.3`) |
+| `XAI_ANSWER_MODEL` | Per-question yes/no (default `grok-4.20-0309-non-reasoning` — no reasoning) |
 
 Then:
 
@@ -46,7 +48,7 @@ This is a long-running chat bot. Publish it as a **Reserved VM**, not Autoscale 
 4. Publish → **Reserved VM**. Run command: `python -m groks_secret.main`.
 5. Confirm logs show `health_listening` then `playgrokkle_running` with `store=postgres`.
 
-The process binds `0.0.0.0:$PORT` so Replit health checks pass (`/` and `/health` return `{"ok":true}`). Replies run on a worker pool (`WORKERS`, default 8) so one slow Grok call does not stall everyone else.
+The process binds `0.0.0.0:$PORT` so Replit health checks pass (`/` and `/health` return `{"ok":true}`). Replies run on a worker pool (`WORKERS`, default 16) so players are answered in parallel — one person's Grok call does not stall everyone else. If Replit Secrets still has `XAI_MODEL=grok-4.3`, that only affects the once-a-day topic pick; yes/no uses `XAI_ANSWER_MODEL` unless you override it.
 
 Locally, if `DATABASE_URL` is unset, it still uses SQLite at `data/groks_secret.sqlite`.
 

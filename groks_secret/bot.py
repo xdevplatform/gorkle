@@ -95,7 +95,7 @@ class Bot:
         engine: GameEngine,
         bot_user_id: str,
         extra_ids: list[str] | None = None,
-        workers: int = 8,
+        workers: int = 16,
     ) -> None:
         self.core = core
         self.api = api
@@ -209,10 +209,10 @@ class Bot:
 
     def _ensure_keys(self, conversation_id: str, peer_id: str) -> None:
         try:
+            bot_pk = self._public_key_input(self.bot_user_id)
+            peer_pk = self._public_key_input(peer_id)
             with self._crypto:
-                prepared = self.core.prepare_conversation_key_change(
-                    [self._public_key_input(self.bot_user_id), self._public_key_input(peer_id)]
-                )
+                prepared = self.core.prepare_conversation_key_change([bot_pk, peer_pk])
             resp = self.api.add_conversation_keys(peer_id, prep_to_request(prepared))
             canonical = str((resp.get("data") or {}).get("conversation_id") or conversation_id)
             raw = prepared.get("conversation_key")

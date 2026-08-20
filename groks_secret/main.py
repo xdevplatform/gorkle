@@ -73,11 +73,13 @@ def main() -> None:
     bot = build(settings)
     backend = "postgres" if settings.database_url else "sqlite"
     logger.info(
-        "playgrokkle_running bot=%s poll=%.1fs workers=%d store=%s",
+        "playgrokkle_running bot=%s poll=%.1fs workers=%d store=%s pick=%s answer=%s",
         bot.bot_user_id,
         settings.poll_interval,
         settings.workers,
         backend,
+        settings.xai_model,
+        settings.xai_answer_model,
     )
     bot.engine.ensure_daily_secret()
     if settings.bearer_token:

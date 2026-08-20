@@ -40,6 +40,7 @@ class Settings:
     private_keys_b64: str
     xai_api_key: str
     xai_model: str
+    xai_answer_model: str
     imagine_model: str
     trends_woeid: int
     poll_interval: float
@@ -70,6 +71,11 @@ class Settings:
             private_keys_b64=blob,
             xai_api_key=_require("XAI_API_KEY"),
             xai_model=os.environ.get("XAI_MODEL", "grok-4.3").strip() or "grok-4.3",
+            # Per-question yes/no. grok-4.3 / 4.6 reason; this one does not.
+            xai_answer_model=(
+                os.environ.get("XAI_ANSWER_MODEL", "grok-4.20-0309-non-reasoning").strip()
+                or "grok-4.20-0309-non-reasoning"
+            ),
             imagine_model=(
                 os.environ.get("XAI_IMAGINE_MODEL", "grok-imagine-image-2.0").strip()
                 or "grok-imagine-image-2.0"
@@ -86,6 +92,6 @@ class Settings:
                 os.environ.get("DATABASE_URL", "").strip()
                 or os.environ.get("POSTGRES_URL", "").strip()
             ),
-            workers=max(1, int(os.environ.get("WORKERS", "8"))),
+            workers=max(1, int(os.environ.get("WORKERS", "16"))),
             port=int(os.environ.get("PORT", "8080")),
         )

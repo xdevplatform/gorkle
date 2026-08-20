@@ -20,6 +20,8 @@ class TopicHost(Protocol):
 logger = logging.getLogger("groks_secret.game")
 
 META = {"help", "?", "score", "rules", "how", "how to play"}
+_SMALLTALK_FIRST = {"hi", "hello", "hey", "yo", "sup", "gm", "thanks", "thx"}
+_SMALLTALK = _SMALLTALK_FIRST | {"start", "play", "good morning", "thank you", "thanks!"}
 _QUESTION_START = {
     "am",
     "are",
@@ -47,6 +49,16 @@ _QUESTION_START = {
     "will",
     "would",
 }
+
+
+def is_smalltalk(text: str) -> bool:
+    lowered = text.strip().lower().rstrip("!.")
+    if not lowered or lowered in META or lowered == "score":
+        return False
+    if lowered in _SMALLTALK:
+        return True
+    first = lowered.split()[0].strip("\"'“”‘’,")
+    return first in _SMALLTALK_FIRST
 
 
 def is_question(text: str) -> bool:
@@ -111,6 +123,13 @@ class GameEngine:
 
         if lowered in META or lowered == "score":
             return f"{copy.HELP}\n\n{copy.remaining_line(game)}"
+
+        if is_smalltalk(stripped):
+            say = "Ask it as a question."
+            reply = intro + f"{say}\n\n{copy.remaining_line(game)}"
+            self.store.record_turn(user_id, today, "user", stripped)
+            self.store.record_turn(user_id, today, "assistant", reply)
+            return reply
 
         left_before = MAX_QUESTIONS - game.questions_used
         verdict = self.grok.interpret(secret.topic, stripped, left_before)

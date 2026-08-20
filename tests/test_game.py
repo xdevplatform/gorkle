@@ -5,18 +5,20 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
 
-from groks_secret.game import GameEngine, is_question
+from groks_secret.game import GameEngine, is_question, is_smalltalk
 from groks_secret.store import MAX_QUESTIONS, Store
 
 
 class FakeGrok:
     def __init__(self) -> None:
         self.next = {"kind": "yesno", "say": "Yes."}
+        self.interpret_calls = 0
 
     def pick_topic(self, trends: list[str]) -> str:
         return "Grok"
 
     def interpret(self, topic: str, player_text: str, questions_left: int) -> dict[str, str]:
+        self.interpret_calls += 1
         return dict(self.next)
 
 
@@ -105,6 +107,16 @@ class GameTests(unittest.TestCase):
         assert game is not None
         self.assertEqual(game.questions_used, 1)
 
+    def test_smalltalk_skips_grok(self) -> None:
+        self.engine.handle("10", "help")
+        before = self.grok.interpret_calls
+        reply = self.engine.handle("10", "hi again")
+        self.assertEqual(self.grok.interpret_calls, before)
+        self.assertIn("question", reply.lower())
+        game = self.store.get_game("10")
+        assert game is not None
+        self.assertEqual(game.questions_used, 0)
+
     def test_no_trends_does_not_invent_a_secret(self) -> None:
         self.api.get_trends.return_value = []
         self.store.reset_play_state()
@@ -120,6 +132,14 @@ class QuestionDetectTests(unittest.TestCase):
         self.assertFalse(is_question("batman"))
         self.assertFalse(is_question("hi"))
         self.assertFalse(is_question("sounds like a movie"))
+
+    def test_smalltalk(self) -> None:
+        self.assertTrue(is_smalltalk("hi"))
+        self.assertTrue(is_smalltalk("hi again"))
+        self.assertTrue(is_smalltalk("thanks!"))
+        self.assertFalse(is_smalltalk("is it a movie"))
+        self.assertFalse(is_smalltalk("batman"))
+        self.assertFalse(is_smalltalk("help"))
 
 
 if __name__ == "__main__":

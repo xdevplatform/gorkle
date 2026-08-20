@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from groks_secret.config import Settings
@@ -95,15 +96,30 @@ class Grok:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    def _chat(self, system: str, user: str, *, temperature: float = 0.3) -> str:
-        body = {
-            "model": self.settings.xai_model,
+    def _chat(
+        self,
+        system: str,
+        user: str,
+        *,
+        model: str | None = None,
+        temperature: float = 0.3,
+        max_tokens: int | None = None,
+        timeout: float = 60,
+        json_object: bool = False,
+    ) -> str:
+        chosen = model or self.settings.xai_model
+        body: dict[str, Any] = {
+            "model": chosen,
             "temperature": temperature,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         }
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
+        if json_object:
+            body["response_format"] = {"type": "json_object"}
         req = Request(
             XAI_URL,
             data=json.dumps(body).encode(),
@@ -113,8 +129,12 @@ class Grok:
             },
             method="POST",
         )
-        with urlopen(req, timeout=60) as resp:
-            payload = json.loads(resp.read().decode())
+        try:
+            with urlopen(req, timeout=timeout) as resp:
+                payload = json.loads(resp.read().decode())
+        except HTTPError as err:
+            logger.error("xai_http model=%s status=%s", chosen, err.code)
+            raise
         return str(payload["choices"][0]["message"]["content"])
 
     @staticmethod
@@ -133,7 +153,14 @@ class Grok:
     def pick_topic(self, trends: list[str]) -> str:
         if not trends:
             raise RuntimeError("no live X trends to pick from")
-        raw = self._chat(PICK_SYSTEM, "Live X trends and stories:\n" + "\n".join(f"- {t}" for t in trends))
+        raw = self._chat(
+            PICK_SYSTEM,
+            "Live X trends and stories:\n" + "\n".join(f"- {t}" for t in trends),
+            model=self.settings.xai_model,
+            max_tokens=200,
+            timeout=60,
+            json_object=True,
+        )
         data = self._parse_json(raw)
         topic = str(data.get("topic") or "").strip().lstrip("#")
         if not topic:
@@ -152,7 +179,34 @@ class Grok:
 
     def interpret(self, topic: str, player_text: str, questions_left: int) -> dict[str, str]:
         user = f"Questions remaining: {questions_left}\nPlayer said: {player_text}"
-        raw = self._chat(ANSWER_SYSTEM.format(topic=topic), user, temperature=0.1)
+        kwargs: dict[str, Any] = {
+            "temperature": 0.1,
+            "max_tokens": 80,
+            "timeout": 20,
+            "json_object": True,
+        }
+        try:
+            raw = self._chat(
+                ANSWER_SYSTEM.format(topic=topic),
+                user,
+                model=self.settings.xai_answer_model,
+                **kwargs,
+            )
+        except HTTPError as err:
+            if err.code in {400, 404} and self.settings.xai_answer_model != self.settings.xai_model:
+                logger.warning(
+                    "answer_model_unavailable model=%s — falling back to %s",
+                    self.settings.xai_answer_model,
+                    self.settings.xai_model,
+                )
+                raw = self._chat(
+                    ANSWER_SYSTEM.format(topic=topic),
+                    user,
+                    model=self.settings.xai_model,
+                    **kwargs,
+                )
+            else:
+                raise
         data = self._parse_json(raw)
         kind = str(data.get("kind") or "other")
         say = str(data.get("say") or "").strip()
