@@ -12,6 +12,14 @@ class LeakClampTests(unittest.TestCase):
         self.assertFalse(leaks_secret("Yes.", "Bo Jackson"))
         self.assertFalse(leaks_secret("No. Keep going.", "Bo Jackson"))
 
+    def test_prompt_resolves_nicknames(self) -> None:
+        from groks_secret.grok import ANSWER_SYSTEM
+
+        text = ANSWER_SYSTEM.format(topic="Gronk (Rob Gronkowski)")
+        self.assertIn("REAL-WORLD ENTITY", text)
+        self.assertIn("Is it a person?", text)
+        self.assertIn("Yes.", text)
+
     def test_strips_yesno_to_verdict(self) -> None:
         self.assertEqual(
             clamp_say("yesno", "Yes. Two sports, one Jackson.", "Bo Jackson"),
