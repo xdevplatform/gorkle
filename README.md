@@ -28,7 +28,7 @@ Official intro: [X Chat](https://docs.x.com/xchat/introduction.md). Smaller echo
 
 ## Run your own
 
-This is a long-running process. You need a bot X account, Chat identity keys, and an [xAI](https://console.x.ai) key for Grok.
+This is a long-running process. You need a Chat Bot token from the [X Developer Console](https://console.x.com) and an [xAI](https://console.x.ai) key for Grok.
 
 Python 3.10+.
 
@@ -41,39 +41,25 @@ pip install -e .
 cp .env.example .env
 ```
 
-### 1. X app and tokens
+### 1. Chat Bot access token
 
-Create an app in the [X Developer Portal](https://console.x.com). The **user-context** token must belong to the bot account and include:
+In the [X Developer Console](https://console.x.com), create a **Chat Bot access token**. That token belongs to the bot — it is not an app-only Bearer, and it is not a generic OAuth login. Creating it also creates the bot's Chat identity, so the console gives you all three of these together:
 
-`dm.read dm.write tweet.read users.read media.write`
+| From the console | Env var | What it is |
+| --- | --- | --- |
+| Bot access token | `X_ACCESS_TOKEN` | Starts with `xcbot_`. Used to encrypt, decrypt, and send Chat. |
+| Juicebox PIN | `CHAT_PIN` | Unlocks the Chat identity. Don't guess it later — wrong PINs can lock Juicebox. |
+| Version | `CHAT_SIGNING_KEY_VERSION` | The registered `public_key_version` for that identity. |
 
-The easiest way to mint one is [`xurl`](https://github.com/xdevplatform/xurl):
+Also copy the bot's numeric user id into `CHAT_BOT_USER_ID`. If you omit it, the process uses the user on the `xcbot_` token.
 
-```bash
-brew install --cask xdevplatform/tap/xurl
-xurl auth apps add my-bot --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET
-xurl auth oauth2 --app my-bot
-xurl /2/users/me
-```
+Then open **Apps** for the app that Chat Bot is associated with and copy that app's **Bearer Token** (`AAAA…`) into `X_BEARER_TOKEN`. The `xcbot_` token cannot call `GET /2/activity/stream`. Without the Bearer, people who don't follow the bot land in Message requests and the inbox list never sees them.
 
-Copy the `access_token` into `.env` as `X_ACCESS_TOKEN`.
-
-Set `X_BEARER_TOKEN` to the **app-only** Bearer from the same app. The user token cannot call `GET /2/activity/stream`. Without that Bearer, people who don't follow the bot land in Message requests and the inbox list never sees them.
-
-Set `CHAT_BOT_USER_ID` to the numeric id of the bot account (`xurl /2/users/me`). If you omit it, the process uses the user on the access token.
-
-### 2. Chat identity
-
-Register public keys once — the [Python chat-xdk example](https://github.com/xdevplatform/chat-xdk/tree/main/examples/python) walks through it. Then this process either:
-
-1. **Juicebox PIN** (`CHAT_PIN`) — fetches `juicebox_config` from `GET /2/users/{id}/public_keys`, then Chat XDK `unlock(pin)`, or
-2. **Key blob** (`CHAT_PRIVATE_KEYS_B64`) — Chat XDK `import_keys(blob)`. Used when `CHAT_PIN` is not set.
-
-`CHAT_SIGNING_KEY_VERSION` must match the registered `public_key_version`. `CHAT_FINGERPRINT` is an optional check against the API record.
+On boot, `CHAT_PIN` fetches `juicebox_config` from `GET /2/users/{id}/public_keys` and Chat XDK `unlock(pin)` with `CHAT_SIGNING_KEY_VERSION`. If you already have a Chat XDK `export_keys` blob, you can set `CHAT_PRIVATE_KEYS_B64` instead of the PIN. If both are set, `CHAT_PIN` wins.
 
 Never commit `.env`. Never log the PIN, the blob, unwrapped conversation keys, or plaintext DMs.
 
-### 3. Grok
+### 2. Grok
 
 | Variable | Default | When |
 | --- | --- | --- |
