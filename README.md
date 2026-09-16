@@ -1,62 +1,93 @@
-# PlayGorkle
+# Gorkle
 
-Daily **PlayGorkle** over [X Chat](https://docs.x.com/xchat/introduction.md) as [@PlayGorkle](https://x.com/PlayGorkle).
+A daily yes-or-no guessing game that lives entirely in [X Chat](https://docs.x.com/xchat/introduction.md). This is the Chat Agent behind [@PlayGorkle](https://x.com/PlayGorkle) — clone it, run it as your own bot, and use it as a reference for building Chat Agents on X.
 
-At midnight Eastern the bot pulls live X trends (app-bearer WOEID + X News), Grok picks one niche secret, and anyone who DMs `@PlayGorkle` can ask yes/no questions (20 max, one game per person per day). After they finish, they get a spoiler-free PlayGorkle share image with their score.
+**Play the live one:** DM [@PlayGorkle](https://x.com/PlayGorkle).
 
-## Setup
+Every night at midnight Eastern, the bot reads what's trending on X. Grok picks one niche secret. Anyone who DMs the bot gets **20 yes-or-no questions** that day. Name it and you win. Burn the 20 without a hit and you lose. The recap is a spoiler-free share image in the DM (the bot does not post it).
+
+One game per person per day. Help, score, and the opening welcome are templates — Grok only runs for real questions and guesses.
+
+## Why this exists
+
+X Chat is encrypted. X stores and routes ciphertext only. A Chat Agent holds the bot account's identity keys, decrypts inbound DMs, thinks, then encrypts the reply. This repo is a complete, working example of that loop:
+
+| Piece | Package | Role |
+| --- | --- | --- |
+| **Chat XDK** | `chatxdk` | Generate / unlock keys, encrypt, decrypt, sign, verify. No HTTP. |
+| **X API** | `xdk` | Public keys, conversation keys, send, events, media, trends. |
+| **Delivery** | X Activity API | Live `chat.received` so Message-request DMs show up without polling the whole inbox. |
+| **Grok** | xAI API | Picks the daily secret from trends; answers yes/no and guesses. |
+
+```
+inbound ciphertext  →  Chat XDK decrypt/verify  →  game logic (and maybe Grok)
+reply plaintext     →  Chat XDK encrypt/sign    →  POST /2/chat/conversations/{id}/messages
+```
+
+Official intro: [X Chat](https://docs.x.com/xchat/introduction.md). Smaller echo-bot starters: [chat-xdk examples](https://github.com/xdevplatform/chat-xdk/tree/main/examples).
+
+## Run your own
+
+This is a long-running process. You need a bot X account, Chat identity keys, and an [xAI](https://console.x.ai) key for Grok.
 
 Python 3.10+.
 
 ```bash
-cd ~/Projects/groks-secret
+git clone https://github.com/xdevplatform/gorkle.git
+cd gorkle
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 cp .env.example .env
 ```
 
-Fill in `.env`:
+### 1. X app and tokens
 
-| Variable | What |
-| --- | --- |
-| `X_ACCESS_TOKEN` | OAuth 2.0 **user** token for `@PlayGorkle` with `dm.read dm.write tweet.read users.read media.write` |
-| `X_BEARER_TOKEN` | App-only Bearer (needed for inbox discovery **and** `GET /2/trends/by/woeid`) |
-| `CHAT_BOT_USER_ID` | `2100292761698099200` |
-| `CHAT_PIN` | Juicebox PIN for the Chat identity |
-| `CHAT_SIGNING_KEY_VERSION` | Registered `public_key_version` |
-| `CHAT_FINGERPRINT` | Optional `public_key_fingerprint` check |
-| `XAI_API_KEY` | xAI key for Grok |
-| `XAI_MODEL` | Daily topic pick (default `grok-4.3`) |
-| `XAI_ANSWER_MODEL` | Per-question yes/no (default `grok-4.20-0309-non-reasoning` — no reasoning) |
+Create an app in the [X Developer Portal](https://console.x.com). The **user-context** token must belong to the bot account and include:
+
+`dm.read dm.write tweet.read users.read media.write`
+
+The easiest way to mint one is [`xurl`](https://github.com/xdevplatform/xurl):
+
+```bash
+brew install --cask xdevplatform/tap/xurl
+xurl auth apps add my-bot --client-id YOUR_CLIENT_ID --client-secret YOUR_CLIENT_SECRET
+xurl auth oauth2 --app my-bot
+xurl /2/users/me
+```
+
+Copy the `access_token` into `.env` as `X_ACCESS_TOKEN`.
+
+Set `X_BEARER_TOKEN` to the **app-only** Bearer from the same app. The user token cannot call `GET /2/activity/stream`. Without that Bearer, people who don't follow the bot land in Message requests and the inbox list never sees them.
+
+Set `CHAT_BOT_USER_ID` to the numeric id of the bot account (`xurl /2/users/me`). If you omit it, the process uses the user on the access token.
+
+### 2. Chat identity
+
+Register public keys once — the [Python chat-xdk example](https://github.com/xdevplatform/chat-xdk/tree/main/examples/python) walks through it. Then this process either:
+
+1. **Juicebox PIN** (`CHAT_PIN`) — fetches `juicebox_config` from `GET /2/users/{id}/public_keys`, then Chat XDK `unlock(pin)`, or
+2. **Key blob** (`CHAT_PRIVATE_KEYS_B64`) — Chat XDK `import_keys(blob)`. Used when `CHAT_PIN` is not set.
+
+`CHAT_SIGNING_KEY_VERSION` must match the registered `public_key_version`. `CHAT_FINGERPRINT` is an optional check against the API record.
+
+Never commit `.env`. Never log the PIN, the blob, unwrapped conversation keys, or plaintext DMs.
+
+### 3. Grok
+
+| Variable | Default | When |
+| --- | --- | --- |
+| `XAI_API_KEY` | required | All Grok calls |
+| `XAI_MODEL` | `grok-4.3` | Daily topic pick from live trends |
+| `XAI_ANSWER_MODEL` | `grok-4.20-0309-non-reasoning` | Each real question / guess |
 
 Then:
 
 ```bash
-python -m groks_secret.main
+python -m gorkle.main
 ```
 
-Daily topic selection happens on the first poll after midnight America/New_York — no extra cron job required.
-
-## Replit (always on)
-
-This is a long-running chat bot. Publish it as a **Reserved VM**, not Autoscale — Autoscale sleeps and drops the X Chat stream.
-
-1. Import this repo into Replit (or `rsync` the project).
-2. In **Secrets**, paste the same keys as `.env` (`X_ACCESS_TOKEN`, `X_BEARER_TOKEN`, `CHAT_PIN` or `CHAT_PRIVATE_KEYS_B64`, `CHAT_SIGNING_KEY_VERSION`, `XAI_API_KEY`, `CHAT_BOT_USER_ID`, …).
-3. Create a **SQL Database** in the Replit pane. That sets `DATABASE_URL` (Postgres). Games, scores, and seen-message ids persist across publishes. The Replit disk does **not**.
-4. Publish → **Reserved VM**. Run command: `python -m groks_secret.main`.
-5. Confirm logs show `health_listening` then `playgorkle_running` with `store=postgres`.
-
-The process binds `0.0.0.0:$PORT` so Replit health checks pass (`/` and `/health` return `{"ok":true}`). Replies run on a worker pool (`WORKERS`, default 16) so players are answered in parallel — one person's Grok call does not stall everyone else. If Replit Secrets still has `XAI_MODEL=grok-4.3`, that only affects the once-a-day topic pick; yes/no uses `XAI_ANSWER_MODEL` unless you override it.
-
-Locally, if `DATABASE_URL` is unset, it still uses SQLite at `data/groks_secret.sqlite`.
-
-`GET /2/chat/conversations` only returns the **primary inbox**. DMs from people who don't follow `@PlayGorkle` sit in Message requests (`meta.has_message_requests: true`) and are omitted from that list. "Allow messages from anyone" does not move those threads into the inbox.
-
-To auto-discover those senders, set `X_BEARER_TOKEN` to the **app-only** Bearer token from the same X developer app (not the `xcbot_` user token). The bot already subscribes to `chat.received`; the stream is what delivers sender/conversation ids, and then `GET /2/chat/conversations/{id}` works even for request threads.
-
-Until that token is set, either put handles in `CHAT_PEER_USER_IDS` or ask players to follow `@PlayGorkle` first.
+Daily topic selection happens on the first poll after midnight America/New_York — no extra cron job.
 
 ```bash
 python -m unittest discover -s tests
@@ -64,9 +95,40 @@ python -m unittest discover -s tests
 
 ## How a day works
 
-1. First poll after 00:00 ET: live X trends + news → Grok picks one guessable niche topic → stored in Postgres (or SQLite locally).
-2. Inbox poll (`GET /2/chat/conversations`): decrypt new encrypted DMs with Chat XDK.
+1. First poll after 00:00 ET: live X trends + news → Grok picks one guessable niche topic.
+2. Live `chat.received` events (and a periodic inbox sweep) decrypt new DMs with Chat XDK.
 3. Each player gets one `in_progress` game keyed by `(user_id, ET date)`.
-4. Win = correct guess. Lose = 20 used. Recap is a shareable PlayGorkle image in the DM (the bot does not post).
+4. Win = correct guess. Lose = 20 used. Recap is a shareable PlayGorkle image in the DM.
 
-Secrets stay in `.env`. Never commit it.
+## Project layout
+
+```
+gorkle/
+  chat_core.py   Chat XDK wrapper (no HTTP)
+  x_api.py       X Chat HTTP: keys, send, events, media, trends, activity stream
+  bot.py         Decrypt inbound DMs, reply, share cards
+  game.py        20-question rules
+  grok.py        Daily pick + yes/no/guess
+  copy.py        Welcome / help / win / lose templates
+  store.py       SQLite or Postgres
+  share_card.py  Spoiler-free recap image
+  main.py        Process entry: health, stream, poll loop
+```
+
+## Deploy
+
+Keep it alive. Anything that sleeps will drop the activity stream.
+
+Any always-on host works. On Replit, publish as a **Reserved VM** (see [`replit.md`](replit.md)): put the same keys in Secrets, attach a SQL database (`DATABASE_URL`), and run `python -m gorkle.main`. Locally, with `DATABASE_URL` unset, it uses SQLite at `data/gorkle.sqlite`.
+
+The process binds `0.0.0.0:$PORT` (`/` and `/health` return `{"ok":true}`). Replies run on a worker pool (`WORKERS`, default 16) so one player's Grok call does not stall everyone else.
+
+`GET /2/chat/conversations` is **primary inbox only**. "Allow messages from anyone" does not move Message requests onto that list. The app Bearer stream is how those threads are discovered.
+
+Until `X_BEARER_TOKEN` is set, either list handles in `CHAT_PEER_USER_IDS` or ask players to follow the bot first.
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
+
+Share-card typefaces (Space Grotesk, Space Mono) are SIL Open Font License — notices live in [`gorkle/assets/fonts/`](gorkle/assets/fonts).

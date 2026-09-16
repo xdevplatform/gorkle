@@ -9,14 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from groks_secret.chat_core import ChatCore, message_text, prep_to_request
-from groks_secret.game import GameEngine
-from groks_secret.store import Game, Store
-from groks_secret.x_api import RateLimited, XChatClient, _dump
-from groks_secret import copy
-from groks_secret.share_card import cache_path, compose_share_card
+from gorkle.chat_core import ChatCore, message_text, prep_to_request
+from gorkle.game import GameEngine
+from gorkle.store import Game, Store
+from gorkle.x_api import RateLimited, XChatClient, _dump
+from gorkle import copy
+from gorkle.share_card import cache_path, compose_share_card
 
-logger = logging.getLogger("groks_secret.bot")
+logger = logging.getLogger("gorkle.bot")
 
 RECENT_HOURS = 48
 SWEEP_WITH_STREAM = 60.0

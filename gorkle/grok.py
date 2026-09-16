@@ -6,9 +6,9 @@ from typing import Any
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from groks_secret.config import Settings
+from gorkle.config import Settings
 
-logger = logging.getLogger("groks_secret.grok")
+logger = logging.getLogger("gorkle.grok")
 
 XAI_URL = "https://api.x.ai/v1/chat/completions"
 XAI_IMAGES_URL = "https://api.x.ai/v1/images/generations"

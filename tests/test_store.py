@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from groks_secret.store import Store
+from gorkle.store import Store
 
 
 class StoreClaimTests(unittest.TestCase):
@@ -42,7 +42,7 @@ class StoreClaimTests(unittest.TestCase):
 
 class CiphertextIdTests(unittest.TestCase):
     def test_stable_and_distinct(self) -> None:
-        from groks_secret.bot import ciphertext_id
+        from gorkle.bot import ciphertext_id
 
         self.assertEqual(ciphertext_id("abc"), ciphertext_id("abc"))
         self.assertTrue(ciphertext_id("abc").startswith("enc:"))

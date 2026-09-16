@@ -1,6 +1,6 @@
 import unittest
 
-from groks_secret.x_api import _merge_pages, _pages
+from gorkle.x_api import _merge_pages, _pages
 
 
 class PagesTests(unittest.TestCase):

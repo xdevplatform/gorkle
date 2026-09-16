@@ -5,9 +5,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
 
-from groks_secret import copy
-from groks_secret.game import GameEngine, is_question, is_smalltalk
-from groks_secret.store import MAX_QUESTIONS, Store
+from gorkle import copy
+from gorkle.game import GameEngine, is_question, is_smalltalk
+from gorkle.store import MAX_QUESTIONS, Store
 
 
 class FakeGrok:

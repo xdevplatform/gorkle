@@ -4,10 +4,10 @@ import unittest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from groks_secret import copy
-from groks_secret.share_card import BASE_IMAGE, compose_share_card
-from groks_secret.store import Game
-from groks_secret.x_api import XChatClient
+from gorkle import copy
+from gorkle.share_card import BASE_IMAGE, compose_share_card
+from gorkle.store import Game
+from gorkle.x_api import XChatClient
 
 ET = ZoneInfo("America/New_York")
 

@@ -64,7 +64,7 @@ class Settings:
         )
         return cls(
             access_token=_require("X_ACCESS_TOKEN"),
-            bot_user_id=os.environ.get("CHAT_BOT_USER_ID", "2100292761698099200").strip(),
+            bot_user_id=os.environ.get("CHAT_BOT_USER_ID", "").strip(),
             pin=pin,
             signing_key_version=os.environ.get("CHAT_SIGNING_KEY_VERSION", "").strip(),
             fingerprint=os.environ.get("CHAT_FINGERPRINT", "").strip(),
@@ -82,7 +82,7 @@ class Settings:
             ),
             trends_woeid=int(os.environ.get("TRENDS_WOEID", "23424977")),
             poll_interval=float(os.environ.get("POLL_INTERVAL", "4")),
-            db_path=Path(os.environ.get("DB_PATH", str(ROOT / "data" / "groks_secret.sqlite"))),
+            db_path=Path(os.environ.get("DB_PATH", str(ROOT / "data" / "gorkle.sqlite"))),
             peer_user_ids=peers,
             bearer_token=(
                 os.environ.get("X_BEARER_TOKEN", "").strip()

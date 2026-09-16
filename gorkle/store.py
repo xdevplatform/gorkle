@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from groks_secret.config import ET, ROOT
+from gorkle.config import ET, ROOT
 
 MAX_QUESTIONS = 20
 

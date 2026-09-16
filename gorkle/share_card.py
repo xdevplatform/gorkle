@@ -7,8 +7,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
-from groks_secret import copy
-from groks_secret.store import Game
+from gorkle import copy
+from gorkle.store import Game
 
 SIZE = 1024
 GREEN = (118, 255, 140)

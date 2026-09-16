@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from groks_secret.store import MAX_QUESTIONS, Game
+from gorkle.store import MAX_QUESTIONS, Game
 
 ET = ZoneInfo("America/New_York")
 

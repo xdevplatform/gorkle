@@ -14,7 +14,7 @@ from urllib.request import Request, urlopen
 from xdk import Client
 from xdk.chat.models import SendMessageRequest
 
-logger = logging.getLogger("groks_secret.x_api")
+logger = logging.getLogger("gorkle.x_api")
 
 BASE_URL = "https://api.x.com"
 

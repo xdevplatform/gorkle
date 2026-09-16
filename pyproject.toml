@@ -1,8 +1,9 @@
 [project]
-name = "groks-secret"
+name = "gorkle"
 version = "0.1.0"
-description = "PlayGorkle: daily yes/no guessing game over X Chat as @PlayGorkle"
+description = "PlayGorkle: a daily yes/no Chat Agent on X. Fork it and run your own."
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
   "chatxdk",
@@ -11,15 +12,20 @@ dependencies = [
   "xdk",
 ]
 
+[project.urls]
+Homepage = "https://github.com/xdevplatform/gorkle"
+Documentation = "https://docs.x.com/xchat/introduction.md"
+"X Chat" = "https://x.com/PlayGorkle"
+
 [project.scripts]
-groks-secret = "groks_secret.main:main"
+gorkle = "gorkle.main:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["groks_secret*"]
+include = ["gorkle*"]
 
 [tool.setuptools.package-data]
-groks_secret = ["assets/*"]
+gorkle = ["assets/*", "assets/fonts/*"]

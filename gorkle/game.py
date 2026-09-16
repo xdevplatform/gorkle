@@ -4,8 +4,8 @@ import logging
 
 from typing import Protocol
 
-from groks_secret import copy
-from groks_secret.store import MAX_QUESTIONS, Store
+from gorkle import copy
+from gorkle.store import MAX_QUESTIONS, Store
 
 
 class TrendsSource(Protocol):
@@ -17,7 +17,7 @@ class TopicHost(Protocol):
 
     def interpret(self, topic: str, player_text: str, questions_left: int) -> dict[str, str]: ...
 
-logger = logging.getLogger("groks_secret.game")
+logger = logging.getLogger("gorkle.game")
 
 META = {"help", "?", "score", "rules", "how", "how to play"}
 _SMALLTALK_FIRST = {"hi", "hello", "hey", "yo", "sup", "gm", "thanks", "thx"}

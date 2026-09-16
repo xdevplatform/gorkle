@@ -1,10 +1,10 @@
-run = "pip install -r requirements.txt -q && python -m groks_secret.main"
-entrypoint = "groks_secret/main.py"
+run = "pip install -r requirements.txt -q && python -m gorkle.main"
+entrypoint = "gorkle/main.py"
 modules = ["python-3.10", "nix", "postgresql-16"]
 
 [deployment]
 build = ["pip", "install", "-r", "requirements.txt"]
-run = ["python", "-m", "groks_secret.main"]
+run = ["python", "-m", "gorkle.main"]
 deploymentTarget = "vm"
 
 [nix]
@@ -19,8 +19,3 @@ PYTHONUNBUFFERED = "1"
 [[ports]]
 localPort = 8080
 externalPort = 80
-
-[userenv]
-
-[userenv.shared]
-CHAT_BOT_USER_ID = "2100292761698099200"

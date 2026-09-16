@@ -5,19 +5,19 @@ import os
 import threading
 import time
 
-from groks_secret.health import start_health_server
+from gorkle.health import start_health_server
 
-logger = logging.getLogger("groks_secret")
+logger = logging.getLogger("gorkle")
 PLAY_DATA_RESET_RELEASE = "final-play-reset-2026-08-20"
 
 
 def build(settings):
-    from groks_secret.bot import Bot
-    from groks_secret.chat_core import ChatCore
-    from groks_secret.game import GameEngine
-    from groks_secret.grok import Grok
-    from groks_secret.store import Store
-    from groks_secret.x_api import XChatClient
+    from gorkle.bot import Bot
+    from gorkle.chat_core import ChatCore
+    from gorkle.game import GameEngine
+    from gorkle.grok import Grok
+    from gorkle.store import Store
+    from gorkle.x_api import XChatClient
 
     api = XChatClient(settings.access_token, bearer_token=settings.bearer_token)
     bot_user_id = settings.bot_user_id or api.get_my_user_id()
@@ -68,7 +68,7 @@ def _run_activity_stream(bot, bearer_token: str) -> None:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     start_health_server(int(os.environ.get("PORT", "8080")))
-    from groks_secret.config import Settings
+    from gorkle.config import Settings
 
     settings = Settings.from_env()
     bot = build(settings)

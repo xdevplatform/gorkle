@@ -4,7 +4,7 @@ import logging
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-logger = logging.getLogger("groks_secret.health")
+logger = logging.getLogger("gorkle.health")
 
 _BODY = b'{"ok":true,"service":"playgorkle"}'
 

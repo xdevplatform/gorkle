@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from groks_secret.grok import clamp_say, leaks_secret
+from gorkle.grok import clamp_say, leaks_secret
 
 
 class LeakClampTests(unittest.TestCase):
@@ -13,7 +13,7 @@ class LeakClampTests(unittest.TestCase):
         self.assertFalse(leaks_secret("No. Keep going.", "Bo Jackson"))
 
     def test_prompt_resolves_nicknames(self) -> None:
-        from groks_secret.grok import ANSWER_SYSTEM
+        from gorkle.grok import ANSWER_SYSTEM
 
         text = ANSWER_SYSTEM.format(topic="Gronk (Rob Gronkowski)")
         self.assertIn("REAL-WORLD ENTITY", text)

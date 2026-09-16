@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 from requests import Response
 from requests.exceptions import HTTPError
 
-from groks_secret.bot import activity_to_page
-from groks_secret.x_api import RateLimited, XChatClient, http_status, retry_after_seconds
+from gorkle.bot import activity_to_page
+from gorkle.x_api import RateLimited, XChatClient, http_status, retry_after_seconds
 
 
 def _http_429(retry_after: str = "30") -> HTTPError:
@@ -80,7 +80,7 @@ class BackfillFallbackTests(unittest.TestCase):
     def test_detects_backfill_rejection(self) -> None:
         from xdk.streaming import StreamError, StreamErrorType
 
-        from groks_secret.x_api import _rejects_backfill
+        from gorkle.x_api import _rejects_backfill
 
         err = StreamError(
             "Client error (400): Bad request",
