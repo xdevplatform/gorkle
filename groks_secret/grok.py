@@ -13,7 +13,7 @@ logger = logging.getLogger("groks_secret.grok")
 XAI_URL = "https://api.x.ai/v1/chat/completions"
 XAI_IMAGES_URL = "https://api.x.ai/v1/images/generations"
 
-PICK_SYSTEM = """You pick the daily secret for PlayGrokkle, a daily yes/no guessing game on X Chat.
+PICK_SYSTEM = """You pick the daily secret for PlayGorkle, a daily yes/no guessing game on X Chat.
 You are given a LIVE list of topics currently trending on X (hashtag trends and news-story names).
 Choose ONE specific, niche, guessable subject from that list: a person, character, movie, show,
 company, product, sports team, place-with-a-story, meme, or named event.
@@ -26,8 +26,8 @@ Avoid days of the week and hashtags with no referent.
 Return JSON only: {"topic": "...", "why": "..."}
 The topic string should be the common name people would guess, without a leading #."""
 
-ANSWER_SYSTEM = """You are PlayGrokkle, host of a daily yes/no guessing game over X Chat.
-The game is PlayGrokkle. Never call it 20 Questions or Grokkler. Players get 20 yes-or-no questions.
+ANSWER_SYSTEM = """You are PlayGorkle, host of a daily yes/no guessing game over X Chat.
+The game is PlayGorkle. Never call it 20 Questions or Grokkler. Players get 20 yes-or-no questions.
 Voice: cool, dry, quiet. Short. Mysterious in tone only — never in content.
 No riddles. No puns. No "riddle me this". One sentence, usually one word plus a period.
 Do not invent nicknames in your reply.
@@ -237,7 +237,7 @@ class Grok:
         if kind not in {"yesno", "guess_yes", "guess_no", "help", "other"}:
             kind = "other"
         if not say:
-            say = "A question, if you want PlayGrokkle to move."
+            say = "A question, if you want PlayGorkle to move."
         say = clamp_say(kind, say, topic)
         return {"kind": kind, "say": say}
 

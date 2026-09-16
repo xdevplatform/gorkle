@@ -59,7 +59,7 @@ class GameTests(unittest.TestCase):
         last = ""
         for i in range(MAX_QUESTIONS):
             last = self.engine.handle("3", f"is it thing {i}?")
-        self.assertIn("PlayGrokkle ends here", last)
+        self.assertIn("PlayGorkle ends here", last)
         game = self.store.get_game("3")
         assert game is not None
         self.assertEqual(game.status, "lost")

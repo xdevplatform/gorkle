@@ -456,16 +456,41 @@ class XChatClient:
 
         app = Client(bearer_token=bearer_token)
         cfg = StreamConfig(max_retries=-1, timeout=90)
-        minutes = max(0, min(int(backfill_minutes), 5))
+        # Backfill is an access-tier feature. When X rejects it (400
+        # "Stream is not authorized to use backfill_minutes parameter"),
+        # reconnect without it instead of retrying the same bad request.
+        minutes: int | None = max(0, min(int(backfill_minutes), 5)) or None
         while True:
             try:
-                for item in app.stream.activity(
-                    backfill_minutes=minutes,
-                    stream_config=cfg,
-                ):
+                kwargs = {"backfill_minutes": minutes} if minutes else {}
+                for item in app.stream.activity(stream_config=cfg, **kwargs):
                     dumped = _dump(item)
                     if isinstance(dumped, dict):
                         yield dumped
-            except Exception:
+            except Exception as err:
+                if minutes and _rejects_backfill(err):
+                    logger.warning("activity_stream_backfill_unavailable; reconnecting without backfill")
+                    minutes = None
+                    continue
                 logger.exception("activity_stream_disconnected")
                 time.sleep(5)
+
+
+def _rejects_backfill(err: BaseException) -> bool:
+    """True when X answered 400 to a stream request that carried backfill_minutes.
+
+    The only client-controlled parameter we send is backfill_minutes, so a 400
+    on connect means this app's tier may not use it. Match the explicit X
+    message when the body is available, else any 400 in the exception chain.
+    """
+    seen: set[int] = set()
+    cur: BaseException | None = err
+    while cur is not None and id(cur) not in seen:
+        seen.add(id(cur))
+        if getattr(cur, "status_code", None) == 400:
+            return True
+        resp = getattr(cur, "response", None)
+        if resp is not None and getattr(resp, "status_code", None) == 400:
+            return True
+        cur = getattr(cur, "original_exception", None) or cur.__cause__ or cur.__context__
+    return "Client error (400)" in str(err)

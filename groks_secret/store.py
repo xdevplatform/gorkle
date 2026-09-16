@@ -392,6 +392,15 @@ class Store:
                 if item.is_file():
                     item.unlink()
 
+    def reset_play_state_once(self, release: str) -> bool:
+        marker_conversation = "__maintenance__"
+        marker_event = f"play-reset:{release}"
+        if self.seen(marker_conversation, marker_event):
+            return False
+        self.reset_play_state()
+        self.mark_seen(marker_conversation, marker_event)
+        return True
+
     def close(self) -> None:
         if self._pool is not None:
             self._pool.close()

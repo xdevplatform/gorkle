@@ -574,7 +574,7 @@ class Bot:
                     "width": dims[0],
                     "height": dims[1],
                     "filesize_bytes": len(jpeg),
-                    "filename": "playgrokkle.jpg",
+                    "filename": "playgorkle.jpg",
                 }
             ]
             with self._crypto:

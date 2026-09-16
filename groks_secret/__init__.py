@@ -1,1 +1,1 @@
-"""PlayGrokkle — daily yes/no guessing game over X Chat."""
+"""PlayGorkle — daily yes/no guessing game over X Chat."""

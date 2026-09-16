@@ -74,3 +74,47 @@ class ActivityPageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BackfillFallbackTests(unittest.TestCase):
+    def test_detects_backfill_rejection(self) -> None:
+        from xdk.streaming import StreamError, StreamErrorType
+
+        from groks_secret.x_api import _rejects_backfill
+
+        err = StreamError(
+            "Client error (400): Bad request",
+            StreamErrorType.CLIENT_ERROR,
+            status_code=400,
+            response_body="Stream is not authorized to use backfill_minutes parameter",
+        )
+        self.assertTrue(_rejects_backfill(err))
+        self.assertFalse(_rejects_backfill(RuntimeError("connection reset")))
+        self.assertFalse(
+            _rejects_backfill(
+                StreamError("Client error (401): Unauthorized", StreamErrorType.AUTHENTICATION_ERROR, status_code=401)
+            )
+        )
+
+    def test_stream_reconnects_without_backfill(self) -> None:
+        from unittest.mock import patch
+
+        from xdk.streaming import StreamError, StreamErrorType
+
+        calls: list[dict] = []
+
+        def fake_activity(**kwargs):
+            calls.append(kwargs)
+            if "backfill_minutes" in kwargs:
+                raise StreamError("Client error (400): Bad request", StreamErrorType.CLIENT_ERROR, status_code=400)
+            yield {"data": {"event_type": "chat.received"}}
+
+        fake_client = MagicMock()
+        fake_client.stream.activity.side_effect = fake_activity
+        with patch("xdk.Client", return_value=fake_client):
+            client = XChatClient.__new__(XChatClient)
+            gen = client.iter_activity_stream("bearer", backfill_minutes=5)
+            first = next(gen)
+        self.assertEqual(first, {"data": {"event_type": "chat.received"}})
+        self.assertIn("backfill_minutes", calls[0])
+        self.assertNotIn("backfill_minutes", calls[1])

@@ -22,6 +22,23 @@ class StoreClaimTests(unittest.TestCase):
         self.assertTrue(self.store.seen("c1", "e1"))
         self.assertTrue(self.store.try_claim("c1", "e2"))
 
+    def test_play_state_reset_runs_once(self) -> None:
+        today = self.store.today()
+        self.store.save_secret(today, "Test topic", ["Test topic"])
+        self.store.start_game("u1", today)
+        self.store.record_turn("u1", today, "user", "Is it alive?")
+        self.store.mark_seen("c1", "keep-me")
+
+        self.assertTrue(self.store.reset_play_state_once("release-a"))
+        self.assertIsNone(self.store.get_secret(today))
+        self.assertIsNone(self.store.get_game("u1", today))
+        self.assertEqual(self.store.player_ids(), [])
+        self.assertTrue(self.store.seen("c1", "keep-me"))
+
+        self.store.start_game("u1", today)
+        self.assertFalse(self.store.reset_play_state_once("release-a"))
+        self.assertIsNotNone(self.store.get_game("u1", today))
+
 
 class CiphertextIdTests(unittest.TestCase):
     def test_stable_and_distinct(self) -> None:

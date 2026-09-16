@@ -8,6 +8,7 @@ import time
 from groks_secret.health import start_health_server
 
 logger = logging.getLogger("groks_secret")
+PLAY_DATA_RESET_RELEASE = "final-play-reset-2026-08-20"
 
 
 def build(settings):
@@ -21,7 +22,7 @@ def build(settings):
     api = XChatClient(settings.access_token, bearer_token=settings.bearer_token)
     bot_user_id = settings.bot_user_id or api.get_my_user_id()
     core = ChatCore()
-    if settings.private_keys_b64:
+    if settings.private_keys_b64 and not settings.pin:
         version = settings.signing_key_version or "1"
         core.load_keys(settings.private_keys_b64, version)
         logger.info("keys_loaded_from_blob version=%s", version)
@@ -75,9 +76,11 @@ def main() -> None:
         bot.api.get_public_keys(bot.bot_user_id)
     except Exception:
         logger.warning("bot_public_keys_prefetch_failed", exc_info=True)
+    if bot.store.reset_play_state_once(PLAY_DATA_RESET_RELEASE):
+        logger.info("play_state_reset release=%s", PLAY_DATA_RESET_RELEASE)
     backend = "postgres" if settings.database_url else "sqlite"
     logger.info(
-        "playgrokkle_running bot=%s poll=%.1fs workers=%d store=%s pick=%s answer=%s",
+        "playgorkle_running bot=%s poll=%.1fs workers=%d store=%s pick=%s answer=%s",
         bot.bot_user_id,
         settings.poll_interval,
         settings.workers,
