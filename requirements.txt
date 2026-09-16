@@ -2,3 +2,7 @@ chatxdk
 pillow
 psycopg[binary,pool]
 xdk
+chatxdk
+pillow
+psycopg[binary,pool]
+xdk

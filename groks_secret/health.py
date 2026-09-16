@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 logger = logging.getLogger("groks_secret.health")
 
-_BODY = b'{"ok":true,"service":"playgrokkle"}'
+_BODY = b'{"ok":true,"service":"playgorkle"}'
 
 
 class _Handler(BaseHTTPRequestHandler):

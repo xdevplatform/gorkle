@@ -7,10 +7,10 @@ from groks_secret.store import MAX_QUESTIONS, Game
 
 ET = ZoneInfo("America/New_York")
 
-HANDLE = "@PlayGrokkle"
+HANDLE = "@PlayGorkle"
 
 HELP = (
-    "This is PlayGrokkle. One secret, pulled from what's trending on X. "
+    "This is PlayGorkle. One secret, pulled from what's trending on X. "
     "Yes-or-no only — you get 20. A guess counts if you ask it as a question.\n\n"
     "One game per person per day. Midnight Eastern, a new one."
 )
@@ -26,7 +26,7 @@ _label = day_label
 
 def welcome(questions_left: int = MAX_QUESTIONS, *, ask: bool = True) -> str:
     text = (
-        f"PlayGrokkle · {day_label(datetime.now(ET).date().isoformat())}\n\n"
+        f"PlayGorkle · {day_label(datetime.now(ET).date().isoformat())}\n\n"
         f"{HELP}"
     )
     if ask:
@@ -64,7 +64,7 @@ def share_card(game: Game) -> str:
         body = f"Didn't crack it in {MAX_QUESTIONS}."
     else:
         body = "Still playing."
-    return f"PlayGrokkle · {label}\n{body}\nPlay at {HANDLE}"
+    return f"PlayGorkle · {label}\n{body}\nPlay at {HANDLE}"
 
 
 def remaining_line(game: Game) -> str:
@@ -82,7 +82,7 @@ def win(topic: str, game: Game) -> str:
 
 
 def lose(topic: str, game: Game) -> str:
-    return f"PlayGrokkle ends here. It was {topic}."
+    return f"PlayGorkle ends here. It was {topic}."
 
 
 def expire_then_start(old_topic: str, old_date: str) -> str:

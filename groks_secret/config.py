@@ -64,7 +64,7 @@ class Settings:
         )
         return cls(
             access_token=_require("X_ACCESS_TOKEN"),
-            bot_user_id=os.environ.get("CHAT_BOT_USER_ID", "2089844175688597504").strip(),
+            bot_user_id=os.environ.get("CHAT_BOT_USER_ID", "2100292761698099200").strip(),
             pin=pin,
             signing_key_version=os.environ.get("CHAT_SIGNING_KEY_VERSION", "").strip(),
             fingerprint=os.environ.get("CHAT_FINGERPRINT", "").strip(),
